@@ -4,7 +4,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "start": "vite --open",
+    "start": "vite --open --host=0.0.0.0",
+    "svc": "cross-env vite --host=0.0.0.0",
     "dev": "cross-env NODE_ENV=development vite --debug --host=0.0.0.0",
     "build": "vite build && node scripts/postbuild.js",
     "lint": "yarn prettier --ignore-path ../.prettierignore --write ./src",
@@ -53,6 +54,7 @@
     "@vitejs/plugin-react": "^4.0.0-beta.0",
     "autoprefixer": "^10.4.14",
     "buffer": "^6.0.3",
+    "cross-env": "^7.0.3",
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-ft-flow": "^3.0.0",

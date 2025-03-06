@@ -5,6 +5,7 @@ const { WorkspaceUser } = require("./workspaceUsers");
 const { ROLES } = require("../utils/middleware/multiUserProtected");
 const { v4: uuidv4 } = require("uuid");
 const { User } = require("./user");
+const { SystemSettings } = require("../models/systemSettings");
 
 function isNullOrNaN(value) {
   if (value === null) return true;
@@ -162,9 +163,9 @@ const Workspace = {
    * @param {Object} additionalFields - Additional fields to apply to the workspace - will be validated.
    * @returns {Promise<{workspace: Object | null, message: string | null}>} A promise that resolves to an object containing the created workspace and an error message if applicable.
    */
-  new: async function (name = null, creatorId = null, additionalFields = {}) {
+  new: async function (name = null, creatorId = null, additionalFields = {}, slug) {
     if (!name) return { workspace: null, message: "name cannot be null" };
-    var slug = this.slugify(name, { lower: true });
+    slug = slug || this.slugify(name, { lower: true });
     slug = slug || uuidv4();
 
     const existingBySlug = await this.get({ slug });
@@ -239,6 +240,8 @@ const Workspace = {
   },
 
   getWithUser: async function (user = null, clause = {}) {
+    if(SystemSettings.isExternalUser) return this.get(clause)
+
     if ([ROLES.admin, ROLES.manager].includes(user.role))
       return this.get(clause);
 
@@ -318,6 +321,8 @@ const Workspace = {
     limit = null,
     orderBy = null
   ) {
+    if(SystemSettings.isExternalUser) return this.where(clause, limit, orderBy)
+
     if ([ROLES.admin, ROLES.manager].includes(user.role))
       return await this.where(clause, limit, orderBy);
 
@@ -342,6 +347,7 @@ const Workspace = {
   },
 
   whereWithUsers: async function (clause = {}, limit = null, orderBy = null) {
+    if(SystemSettings.isExternalUser) return this.where(clause, limit, orderBy)
     try {
       const workspaces = await this.where(clause, limit, orderBy);
       for (const workspace of workspaces) {

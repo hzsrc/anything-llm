@@ -1,5 +1,6 @@
 const prisma = require("../utils/prisma");
 const { EventLogs } = require("./eventLogs");
+const { SystemSettings } = require("../models/systemSettings");
 
 /**
  * @typedef {Object} User
@@ -85,7 +86,7 @@ const User = {
     role = "default",
     dailyMessageLimit = null,
     bio = "",
-  }) {
+  }, forceInDB) {
     const passwordCheck = this.checkPasswordComplexity(password);
     if (!passwordCheck.checkedOK) {
       return { user: null, error: passwordCheck.error };
@@ -100,16 +101,15 @@ const User = {
 
       const bcrypt = require("bcrypt");
       const hashedPassword = bcrypt.hashSync(password, 10);
-      const user = await prisma.users.create({
-        data: {
-          username: this.validations.username(username),
-          password: hashedPassword,
-          role: this.validations.role(role),
+      let user = {
+        username: this.validations.username(username),
+        password: hashedPassword,
+        role: this.validations.role(role),
           bio: this.validations.bio(bio),
-          dailyMessageLimit:
-            this.validations.dailyMessageLimit(dailyMessageLimit),
-        },
-      });
+        dailyMessageLimit:
+          this.validations.dailyMessageLimit(dailyMessageLimit),
+      }
+      if (!isExternalUser() || forceInDB) user = await prisma.users.create({ data: user });
       return { user: this.filterFields(user), error: null };
     } catch (error) {
       console.error("FAILED TO CREATE USER.", error.message);
@@ -134,6 +134,7 @@ const User = {
   update: async function (userId, updates = {}) {
     try {
       if (!userId) throw new Error("No user id provided for update");
+      if(isExternalUser()) return
       const currentUser = await prisma.users.findUnique({
         where: { id: parseInt(userId) },
       });
@@ -205,18 +206,28 @@ const User = {
     if (!id) throw new Error("No user id provided for update");
 
     try {
+      if(data && data.password) {
+        const passwordCheck = this.checkPasswordComplexity(data.password);
+        if (!passwordCheck.checkedOK) {
+          return { success: false, error: passwordCheck.error };
+        }
+        const bcrypt = require("bcrypt");
+        data.password = bcrypt.hashSync(data.password, 10);
+      }
       const user = await prisma.users.update({
-        where: { id },
+        where: { id: Number(id) },
         data,
       });
-      return { user, message: null };
+      return { user, success: true };
     } catch (error) {
       console.error(error.message);
-      return { user: null, message: error.message };
+      return { user: null, error: error.message };
     }
   },
 
   get: async function (clause = {}) {
+    if(isExternalUser()) return fillUser(clause)
+
     try {
       const user = await prisma.users.findFirst({ where: clause });
       return user ? this.filterFields({ ...user }) : null;
@@ -237,6 +248,8 @@ const User = {
   },
 
   count: async function (clause = {}) {
+    if(isExternalUser()) return 0
+
     try {
       const count = await prisma.users.count({ where: clause });
       return count;
@@ -247,6 +260,8 @@ const User = {
   },
 
   delete: async function (clause = {}) {
+    if(isExternalUser()) return
+
     try {
       await prisma.users.deleteMany({ where: clause });
       return true;
@@ -257,6 +272,8 @@ const User = {
   },
 
   where: async function (clause = {}, limit = null) {
+    if(isExternalUser()) return [fillUser(clause)]
+
     try {
       const users = await prisma.users.findMany({
         where: clause,
@@ -324,5 +341,12 @@ const User = {
     return currentChatCount < user.dailyMessageLimit;
   },
 };
+
+function isExternalUser() {
+  return SystemSettings.isExternalUser
+}
+function fillUser(user) {
+  return {...user, role: 'admin'}
+}
 
 module.exports = { User };

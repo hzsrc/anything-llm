@@ -108,7 +108,7 @@ const LanceDb = {
     const vectorSearchResults = await collection
       .vectorSearch(queryVector)
       .distanceType("cosine")
-      .limit(searchLimit)
+      //.limit(searchLimit)
       .toArray();
 
     await reranker
@@ -117,6 +117,7 @@ const LanceDb = {
         rerankResults.forEach((item) => {
           if (this.distanceToSimilarity(item._distance) < similarityThreshold)
             return;
+          if(result.contextTexts.length >= searchLimit) return;
           const { vector: _, ...rest } = item;
           if (filterIdentifiers.includes(sourceIdentifier(rest))) {
             console.log(
@@ -172,12 +173,13 @@ const LanceDb = {
     const response = await collection
       .vectorSearch(queryVector)
       .distanceType("cosine")
-      .limit(topN)
+      //.limit(topN)
       .toArray();
 
     response.forEach((item) => {
       if (this.distanceToSimilarity(item._distance) < similarityThreshold)
         return;
+      if(result.contextTexts.length >= topN) return;
       const { vector: _, ...rest } = item;
       if (filterIdentifiers.includes(sourceIdentifier(rest))) {
         console.log(
@@ -185,7 +187,6 @@ const LanceDb = {
         );
         return;
       }
-
       result.contextTexts.push(rest.text);
       result.sourceDocuments.push({
         ...rest,

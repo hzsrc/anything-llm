@@ -92,10 +92,11 @@ const Document = {
       if (!data) continue;
 
       const docId = uuidv4();
+      const parts = path.split(/[\/\\]/g)
       const { pageContent, ...metadata } = data;
       const newDoc = {
         docId,
-        filename: path.split("/")[1],
+        filename: parts[parts.length - 1],
         docpath: path,
         workspaceId: workspace.id,
         metadata: JSON.stringify(metadata),

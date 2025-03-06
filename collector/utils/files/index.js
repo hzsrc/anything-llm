@@ -72,8 +72,12 @@ function trashFile(filepath) {
   } catch {
     return;
   }
-
-  fs.rmSync(filepath);
+  if(filepath.indexOf('/hotdir/') === -1)
+    fs.rmSync(filepath);
+  else {
+    const newFn = filepath.replace('/hotdir/', '/docs/')
+    fs.renameSync(filepath, newFn)
+  }
   return;
 }
 

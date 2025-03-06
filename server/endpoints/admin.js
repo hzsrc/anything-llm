@@ -33,12 +33,24 @@ function adminEndpoints(app) {
     "/admin/users",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
     async (_request, response) => {
-      try {
-        const users = await User.where();
+      if(SystemSettings.isExternalUser) {
+        let admin = await User._get({ role: 'admin' }) //only one admin
+        if (!admin) {
+          const data = { role: 'admin', username: 'admin', password: process.env.ADMINPWD || 'Pwd1@2025', seen_recovery_codes: true }
+          const { user: newUser, error } = await User.create(data, true)
+          if(newUser) admin = newUser
+        }
+        const users = admin ? [admin] : []
         response.status(200).json({ users });
-      } catch (e) {
-        console.error(e);
-        response.sendStatus(500).end();
+      }
+      else {
+        try {
+          const users = await User.where();
+          response.status(200).json({ users });
+        } catch (e) {
+          console.error(e);
+          response.sendStatus(500).end();
+        }
       }
     }
   );
@@ -111,7 +123,9 @@ function adminEndpoints(app) {
           return;
         }
 
-        const { success, error } = await User.update(id, updates);
+        const { success, error } = SystemSettings.isExternalUser
+          ? await User._update(id, updates)
+          : await User.update(id, updates);
         response.status(200).json({ success, error });
       } catch (e) {
         console.error(e);

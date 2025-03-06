@@ -25,7 +25,7 @@ function strictMultiUserRoleValid(allowedRoles = DEFAULT_ROLES) {
     const multiUserMode =
       response.locals?.multiUserMode ??
       (await SystemSettings.isMultiUserMode());
-    if (!multiUserMode) return response.sendStatus(401).end();
+    if (!multiUserMode && !SystemSettings.isExternalUser) return response.sendStatus(401).end();
 
     const user =
       response.locals?.user ?? (await userFromSession(request, response));

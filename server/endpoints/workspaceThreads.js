@@ -214,7 +214,7 @@ function workspaceThreadEndpoints(app) {
     ],
     async (request, response) => {
       try {
-        const { chatId, newText = null } = reqBody(request);
+        const { chatId, newText = null, role = 'assistant' } = reqBody(request);
         if (!newText || !String(newText).trim())
           throw new Error("Cannot save empty response");
 
@@ -231,13 +231,16 @@ function workspaceThreadEndpoints(app) {
 
         const chatResponse = safeJsonParse(existingChat.response, null);
         if (!chatResponse) throw new Error("Failed to parse chat response");
-
-        await WorkspaceChats._update(existingChat.id, {
-          response: JSON.stringify({
+        const forUpdate = {}
+        if(role === 'user') {
+          forUpdate.prompt = String(newText)
+        } else {
+          forUpdate.response = JSON.stringify({
             ...chatResponse,
             text: String(newText),
-          }),
-        });
+          })
+        }
+        await WorkspaceChats._update(existingChat.id, forUpdate);
 
         response.sendStatus(200).end();
       } catch (e) {

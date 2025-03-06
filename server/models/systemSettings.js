@@ -15,6 +15,7 @@ function isNullOrNaN(value) {
 
 const SystemSettings = {
   protectedFields: ["multi_user_mode", "hub_api_key"],
+  isExternalUser: process.env.EXTERNALUSER === 'true',
   publicFields: [
     "footer_data",
     "support_email",
@@ -366,6 +367,7 @@ const SystemSettings = {
   },
 
   isMultiUserMode: async function () {
+    //if(SystemSettings.isExternalUser) return true
     try {
       const setting = await this.get({ label: "multi_user_mode" });
       return setting?.value === "true";
