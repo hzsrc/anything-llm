@@ -182,6 +182,56 @@ class OllamaAILLM {
     };
   }
 
+  async generate({ prompt, model, system, context, images } = {}, { temperature = 0.7 }) {
+    const result = await LLMPerformanceMonitor.measureAsyncFunction(
+      this.client
+        .generate({
+          model: model || this.model,
+          stream: false,
+          prompt, system, context, images,
+          keep_alive: this.keepAlive,
+          options: {
+            temperature,
+            use_mlock: true,
+            // There are currently only two performance settings so if its not "base" - its max context.
+            ...(this.performanceMode === "base"
+              ? {}
+              : { num_ctx: this.promptWindowLimit() }),
+          },
+        })
+        .then((res) => {
+          return {
+            content: res.response,
+            usage: {
+              //total_duration, res.total_duration,
+              prompt_tokens: res.prompt_eval_count,
+              completion_tokens: res.eval_count,
+              total_tokens: res.prompt_eval_count + res.eval_count,
+            },
+          };
+        })
+        .catch((e) => {
+          throw new Error(
+            `Ollama::generate failed to communicate with Ollama. ${this.#errorHandler(e).message}`
+          );
+        })
+    );
+
+    if (!result.output.content || !result.output.content.length)
+      throw new Error(`Ollama::generate text response was empty.`);
+
+    return {
+      textResponse: result.output.content,
+      metrics: {
+        prompt_tokens: result.output.usage.prompt_tokens,
+        completion_tokens: result.output.usage.completion_tokens,
+        total_tokens: result.output.usage.total_tokens,
+        outputTps: result.output.usage.completion_tokens / result.duration,
+        duration: result.duration,
+      },
+    };
+  }
+
   async streamGetChatCompletion(messages = null, { temperature = 0.7 }) {
     const measuredStreamRequest = await LLMPerformanceMonitor.measureStream(
       this.client.chat({

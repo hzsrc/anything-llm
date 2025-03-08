@@ -78,6 +78,23 @@ function workspaceThreadEndpoints(app) {
       }
     }
   );
+  app.get(
+    "/threads",
+    [validatedRequest, flexUserRoleValid([ROLES.all])],
+    async (request, response) => {
+      try {
+        const user = await userFromSession(request, response);
+        const workspace = response.locals.workspace;
+        const threads = await WorkspaceThread.where({
+          user_id: user?.id || null,
+        });
+        response.status(200).json({ threads });
+      } catch (e) {
+        console.error(e.message, e);
+        response.sendStatus(500).end();
+      }
+    }
+  );
 
   app.delete(
     "/workspace/:slug/thread/:threadSlug",
