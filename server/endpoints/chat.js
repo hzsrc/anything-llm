@@ -218,7 +218,7 @@ function chatEndpoints(app) {
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
-        const { message, attachments = [], model, context } = reqBody(request);
+        const { message, attachments = [], model, context, temperature } = reqBody(request);
         const workspace = response.locals.workspace;
         const thread = response.locals.thread;
 
@@ -234,21 +234,8 @@ function chatEndpoints(app) {
           return;
         }
 
-        response.setHeader("Cache-Control", "no-cache");
-        response.setHeader("Content-Type", "text/event-stream");
-        response.setHeader("Access-Control-Allow-Origin", "*");
-        response.setHeader("Connection", "keep-alive");
-        response.flushHeaders();
-
         if (multiUserMode(response) && !(await User.canSendChat(user))) {
-          writeResponseChunk(response, {
-            id: uuidv4(),
-            type: "abort",
-            textResponse: null,
-            sources: [],
-            close: true,
-            error: `You have met your maximum 24 hour chat quota of ${user.dailyMessageLimit} chats. Try again later.`,
-          });
+          response.status(500).json(`You have met your maximum 24 hour chat quota of ${user.dailyMessageLimit} chats. Try again later.`);
           return;
         }
 
@@ -259,23 +246,18 @@ function chatEndpoints(app) {
         const system = workspace.openAiPrompt + '\n' + (context || '')
         const pars = { prompt: message, model, system, images: attachments || [] }
         const ret = await LLMConnector.generate(pars, {
-          temperature: workspace?.openAiTemp ?? LLMConnector.defaultTemp,
+          temperature: temperature || workspace?.openAiTemp || LLMConnector.defaultTemp,
         });
 
+        let newName = truncate(message, 22)
         // If thread was renamed emit event to frontend via special `action` response.
         await WorkspaceThread.autoRenameThread({
           thread,
           workspace,
           user,
-          newName: truncate(message, 22),
+          newName,
           onRename: (thread) => {
-            writeResponseChunk(response, {
-              action: "rename_thread",
-              thread: {
-                slug: thread.slug,
-                name: thread.name,
-              },
-            });
+            newName = thread.name
           },
         });
 
@@ -297,9 +279,8 @@ function chatEndpoints(app) {
         //   },
         //   user?.id
         // );
-        writeResponseChunk(response, ret);
 
-        await WorkspaceChats.new({
+        const { chat } = await WorkspaceChats.new({
           workspaceId: workspace.id,
           prompt: message,
           response: {
@@ -313,10 +294,12 @@ function chatEndpoints(app) {
           user,
         });
 
+        if(chat) ret.chatId = chat.id;
+        response.status(200).json(ret);
         response.end();
       } catch (e) {
         console.error(e);
-        writeResponseChunk(response, {
+        response.status(500).json({
           id: uuidv4(),
           type: "abort",
           textResponse: null,

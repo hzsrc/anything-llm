@@ -244,7 +244,7 @@ function workspaceThreadEndpoints(app) {
           user_id: user?.id,
           id: Number(chatId),
         });
-        if (!existingChat) throw new Error("Invalid chat.");
+        if (!existingChat) throw new Error("Invalid chat: wid=" + workspace.id + ',tid=' + thread.id + ',user=' + user.id + ",chat=" + chatId);
 
         const chatResponse = safeJsonParse(existingChat.response, null);
         if (!chatResponse) throw new Error("Failed to parse chat response");
