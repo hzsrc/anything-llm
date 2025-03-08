@@ -1,5 +1,6 @@
 const { ApiKey } = require("../../models/apiKeys");
 const { SystemSettings } = require("../../models/systemSettings");
+const { validatedRequest } = require("./validatedRequest");
 
 async function validApiKey(request, response, next) {
   const multiUserMode = await SystemSettings.isMultiUserMode();
@@ -15,10 +16,14 @@ async function validApiKey(request, response, next) {
   }
 
   if (!(await ApiKey.get({ secret: bearerKey }))) {
-    response.status(403).json({
-      error: "No valid api key found.",
-    });
-    return;
+    var ok = false
+    await validatedRequest(request, response, () => ok= true)
+    if (!ok) {
+      response.status(403).json({
+        error: "No valid api key found.",
+      });
+      return;
+    }
   }
 
   next();
