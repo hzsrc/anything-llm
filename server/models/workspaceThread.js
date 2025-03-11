@@ -131,7 +131,7 @@ const WorkspaceThread = {
       user_id: user?.id || null,
       thread_id: thread.id,
     });
-    if (chatCount !== 1) return { renamed: false, thread };
+    if (chatCount > 1) return { renamed: false, thread };
     const { thread: updatedThread } = await this.update(thread, {
       name: newName,
     });

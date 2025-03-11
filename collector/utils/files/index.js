@@ -66,6 +66,7 @@ function parseableAsText(filepath) {
 function trashFile(filepath) {
   if (!fs.existsSync(filepath)) return;
 
+  filepath = filepath.replace(/\\/g, '/')
   try {
     const isDir = fs.lstatSync(filepath).isDirectory();
     if (isDir) return;

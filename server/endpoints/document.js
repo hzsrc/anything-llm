@@ -106,6 +106,26 @@ function documentEndpoints(app) {
       }
     }
   );
+
+  app.get('/document/download',
+    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    async (request, response) => {
+      try {
+        const { fileName } = request.query;
+        const docPath = path.resolve(__dirname, `../../collector/docs/`)
+        const destinationPath = path.join(docPath, normalizePath(fileName));
+        if (!fs.existsSync(destinationPath)) throw new Error('File not exist: '+ destinationPath)
+        fs.readFile(destinationPath, (err, data) => {
+          if (err) throw err;
+          response.status(200).send(data).end();
+        });
+      } catch (e) {
+        console.error(e);
+        response
+          .status(500)
+          .json({ success: false, message: "Failed to download file." });
+      }
+    })
 }
 
 module.exports = { documentEndpoints };

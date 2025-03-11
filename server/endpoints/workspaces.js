@@ -956,17 +956,17 @@ function workspaceEndpoints(app) {
     async function(request, response) {
       try {
         const { slug = null } = request.params;
-        const body = reqBody(request);
+        const { locations } = reqBody(request);
         const user = await userFromSession(request, response);
         const currWorkspace = multiUserMode(response)
           ? await Workspace.getWithUser(user, { slug })
           : await Workspace.get({ slug });
 
-        if (!currWorkspace || !body.documentLocation)
+        if (!currWorkspace || !locations)
           return response.sendStatus(400).end();
 
         // Will delete the document from the entire system + wil unembed it.
-        await purgeDocument(body.documentLocation);
+        await purgeDocument(locations, currWorkspace);
         response.status(200).end();
       } catch (e) {
         console.error(e.message, e);

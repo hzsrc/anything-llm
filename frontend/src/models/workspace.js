@@ -463,7 +463,7 @@ const Workspace = {
       `${API_BASE}/workspace/${slug}/remove-and-unembed`,
       {
         method: "DELETE",
-        body: JSON.stringify({ documentLocation }),
+        body: JSON.stringify({ locations: [documentLocation] }),
         headers: baseHeaders(),
       }
     );

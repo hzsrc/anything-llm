@@ -10,14 +10,18 @@ const {
 const { Document } = require("../../models/documents");
 const { Workspace } = require("../../models/workspace");
 
-async function purgeDocument(filename = null) {
-  if (!filename || !normalizePath(filename)) return;
-
-  await purgeVectorCache(filename);
-  await purgeSourceDocument(filename);
-  const workspaces = await Workspace.where();
+async function purgeDocument(filenames = null, workspace) {
+  var files = [].concat(filenames).filter(filename => {
+    return filename && normalizePath(filename);
+  })
+  if (!files[0]) return
+  for(const filename of files) {
+    await purgeVectorCache(filename);
+    await purgeSourceDocument(filename);
+  }
+  const workspaces = workspace ? [workspace] : await Workspace.where();
   for (const workspace of workspaces) {
-    await Document.removeDocuments(workspace, [filename]);
+    await Document.removeDocuments(workspace, files);
   }
   return;
 }
