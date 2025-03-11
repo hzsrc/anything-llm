@@ -134,6 +134,7 @@ class OllamaAILLM {
   }
 
   async getChatCompletion(messages = null, { temperature = 0.7 }) {
+    console.log('api', messages)
     const result = await LLMPerformanceMonitor.measureAsyncFunction(
       this.client
         .chat({
@@ -183,6 +184,7 @@ class OllamaAILLM {
   }
 
   async generate({ prompt, model, system, context, images } = {}, { temperature = 0.7 }) {
+    console.log('api', model, system, prompt, context)
     const result = await LLMPerformanceMonitor.measureAsyncFunction(
       this.client
         .generate({

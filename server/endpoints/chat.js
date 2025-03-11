@@ -290,7 +290,7 @@ function chatEndpoints(app) {
             attachments,
           },
           threadId: thread?.id || null,
-          include: false,
+          include: true,
           user,
         });
 

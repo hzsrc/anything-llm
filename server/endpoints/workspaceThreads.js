@@ -266,6 +266,40 @@ function workspaceThreadEndpoints(app) {
       }
     }
   );
-}
 
+  app.post(
+    "/workspace/:slug/thread/:threadSlug/add-chat",
+    [validatedRequest, flexUserRoleValid([ROLES.all]), validWorkspaceAndThreadSlug],
+    async (request, response) => {
+      try {
+        const { prompt, textResponse, attachments = [] } = reqBody(request);
+        if (!prompt || !String(prompt).trim())
+          throw new Error("Cannot save empty response");
+
+        const user = await userFromSession(request, response);
+        const workspace = response.locals.workspace;
+        const thread = response.locals.thread;
+        const { chat } = await WorkspaceChats.new({
+          workspaceId: workspace.id,
+          prompt,
+          response: {
+            text: textResponse,
+            sources: [],
+            type: 'chat',
+            attachments,
+          },
+          threadId: thread?.id || null,
+          include: true,
+          user,
+        });
+
+        response.status(200).json(chat.id).end();
+      } catch (e) {
+        console.error(e.message, e);
+        response.status(500).end();
+      }
+    },
+  );
+
+}
 module.exports = { workspaceThreadEndpoints };
