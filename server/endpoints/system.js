@@ -34,6 +34,7 @@ const { WelcomeMessages } = require("../models/welcomeMessages");
 const { ApiKey } = require("../models/apiKeys");
 const { getCustomModels } = require("../utils/helpers/customModels");
 const { WorkspaceChats } = require("../models/workspaceChats");
+const { WorkspaceThread } = require("../models/workspaceThread");
 const {
   flexUserRoleValid,
   ROLES,
@@ -1045,9 +1046,11 @@ function systemEndpoints(app) {
     async (request, response) => {
       try {
         const { id } = request.params;
-        Number(id) === -1
-          ? await WorkspaceChats.delete({}, true)
-          : await WorkspaceChats.delete({ id: Number(id) });
+        if(Number(id) === -1) {
+          await WorkspaceChats.delete({})
+          WorkspaceThread.delete({})
+        } else
+          await WorkspaceChats.delete({ id: Number(id) });
         response.json({ success: true, error: null });
       } catch (e) {
         console.error(e);
