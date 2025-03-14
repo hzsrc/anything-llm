@@ -235,6 +235,7 @@ class OllamaAILLM {
   }
 
   async streamGetChatCompletion(messages = null, { temperature = 0.7 }) {
+    console.log('api', messages)
     const measuredStreamRequest = await LLMPerformanceMonitor.measureStream(
       this.client.chat({
         model: this.model,
