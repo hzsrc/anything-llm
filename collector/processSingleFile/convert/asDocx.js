@@ -17,7 +17,7 @@ async function asDocX({ fullFilePath = "", filename = "" }) {
   for (const doc of docs) {
     console.log(`-- Parsing content from docx page --`);
     if (!doc.pageContent.length) continue;
-    pageContent.push(doc.pageContent);
+    pageContent.push(doc.pageContent.replace(/\n\n/g, '\n')); //\n\n => \n
   }
 
   if (!pageContent.length) {
