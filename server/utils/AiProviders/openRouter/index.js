@@ -199,7 +199,10 @@ class OpenRouterLLM {
       },
     ];
   }
-
+  async generate({ prompt, model, system, context, images } = {}, { temperature = 0.7 }) {
+    const { OllamaAILLM } = require("../ollama");
+    return OllamaAILLM.generate.apply(this, arguments);
+  }
   async getChatCompletion(messages = null, { temperature = 0.7 }) {
     if (!(await this.isValidChatCompletionModel(this.model)))
       throw new Error(
