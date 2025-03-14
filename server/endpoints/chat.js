@@ -245,6 +245,7 @@ function chatEndpoints(app) {
         });
         const system = workspace.openAiPrompt + '\n' + (context || '')
         const pars = { prompt: message, model, system, images: attachments || [] }
+        console.log('api', model, system, prompt, context)
         const ret = await LLMConnector.generate(pars, {
           temperature: temperature || workspace?.openAiTemp || LLMConnector.defaultTemp,
         });

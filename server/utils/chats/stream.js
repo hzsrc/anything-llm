@@ -221,6 +221,7 @@ async function streamChatWithWorkspace(
     },
     rawHistory
   );
+  console.log('api', messages.length, messages.slice(-2).map(m => m.content))
 
   // If streaming is not explicitly enabled for connector
   // we do regular waiting of a response and send a single chunk.
