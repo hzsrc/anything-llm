@@ -263,9 +263,10 @@ const Workspace = {
 
       if (!workspace) return null;
 
+      const documents = parseMeta(await Document.forWorkspace(workspace.id));
       return {
         ...workspace,
-        documents: await Document.forWorkspace(workspace.id),
+        documents,
       };
     } catch (error) {
       console.error(error.message);
@@ -282,6 +283,7 @@ const Workspace = {
         },
       });
 
+      parseMeta(workspace.documents)
       return workspace || null;
     } catch (error) {
       console.error(error.message);
@@ -478,5 +480,10 @@ const Workspace = {
     }
   },
 };
-
+function parseMeta(documents) {
+  documents.map(doc => {
+    if (doc.metadata) doc.meta = JSON.parse(doc.metadata)
+    delete doc.metadata
+  })
+}
 module.exports = { Workspace };
