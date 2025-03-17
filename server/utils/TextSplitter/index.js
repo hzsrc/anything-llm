@@ -71,7 +71,7 @@ class TextSplitter {
     if (!metadata || Object.keys(metadata).length === 0) return null;
     const PLUCK_MAP = {
       title: {
-        as: "sourceDocument",
+        as: "title",
         pluck: (metadata) => {
           return metadata?.title || null;
         },
