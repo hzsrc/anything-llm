@@ -156,16 +156,18 @@ class TextSplitter {
 
 // Wrapper for Langchain default RecursiveCharacterTextSplitter class.
 class RecursiveSplitter {
-  constructor({ chunkSize, chunkOverlap, chunkHeader = null }) {
-    const {
-      RecursiveCharacterTextSplitter,
-    } = require("@langchain/textsplitters");
+  constructor(config) {
+    const { chunkSize, chunkOverlap, chunkHeader = null } = config;
     this.log(`Will split with`, { chunkSize, chunkOverlap });
     this.chunkHeader = chunkHeader;
+
+    const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
     this.engine = new RecursiveCharacterTextSplitter({
       chunkSize,
       chunkOverlap,
+      separators: [".\n\n", "。\n\n", "\n\n", "。", "！", "？", "\n", "，", " ", ""],
     });
+    this.config = config;
   }
 
   log(text, ...args) {
@@ -173,14 +175,26 @@ class RecursiveSplitter {
   }
 
   async _splitText(documentText) {
-    if (!this.chunkHeader) return this.engine.splitText(documentText);
-    const strings = await this.engine.splitText(documentText);
+    //try {
+    let strings;
+    if (process.env.USE_CHINESE) {
+      const ChineseTextSplitter = require("./ChineseTextSplitter");
+      strings = new ChineseTextSplitter(this.config).splitText(documentText);
+    } else {
+      strings = await this.engine.splitText(documentText);
+    }
+    if (!this.chunkHeader) return strings;
     const documents = await this.engine.createDocuments(strings, [], {
       chunkHeader: this.chunkHeader,
     });
-    return documents
+    const docTexts = documents
       .filter((doc) => !!doc.pageContent)
       .map((doc) => doc.pageContent);
+    //docTexts.map((s, i) => require("fs").writeFileSync("doc-" + i + "-" + s.length + ".log", s));
+    return docTexts;
+    //} catch (e) {
+    //require('fs').writeFileSync('err.txt', e.toString())
+    //}
   }
 }
 
